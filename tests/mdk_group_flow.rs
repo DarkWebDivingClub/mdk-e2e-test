@@ -48,6 +48,26 @@ fn build_engine(
         .expect("build engine")
 }
 
+fn build_engine_with_vault(
+    seed: &[u8],
+    mnemonic: &str,
+) -> Engine<SqliteAccountStorage> {
+    let (pubkey, proof_signer) = test_identity(seed);
+    let identity_hex = hex::encode(&pubkey);
+    let vault_signer = wn_kv_test::vault_signer::VaultSigner::new(
+        mnemonic, &identity_hex, None,
+    ).expect("vault signer");
+
+    EngineBuilder::new(SqliteAccountStorage::in_memory().unwrap())
+        .identity(pubkey)
+        .account_identity_proof_signer(proof_signer)
+        .mls_signer(Box::new(vault_signer))
+        .feature_registry(selfremove_registry())
+        .peeler(Box::new(RelayPeeler))
+        .build()
+        .expect("build engine")
+}
+
 fn app_payload(engine: &Engine<SqliteAccountStorage>, content: &str) -> Vec<u8> {
     MarmotAppEvent::new(
         hex::encode(engine.self_id().as_slice()),
@@ -109,7 +129,10 @@ async fn mdk_group_flow_through_relay() {
 
     // ── 0. Set up engines + relay clients ────────────────────────────────
 
-    let mut alice = build_engine(b"alice");
+    let mut alice = build_engine_with_vault(
+        b"alice",
+        "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+    );
     let mut bob = build_engine(b"bob");
 
     let relay_client = make_relay_client().await.expect("relay client");

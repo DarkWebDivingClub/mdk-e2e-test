@@ -5,9 +5,9 @@ edition = "2024"
 publish = false
 
 [dependencies]
-cgka-engine = { git = "https://github.com/dukeh3/mdk.git", branch = "master" }
-cgka-traits = { git = "https://github.com/dukeh3/mdk.git", branch = "master" }
-storage-sqlite = { git = "https://github.com/dukeh3/mdk.git", branch = "master" }
+cgka-engine = { path = "../mdk/crates/cgka-engine" }
+cgka-traits = { path = "../mdk/crates/traits" }
+storage-sqlite = { path = "../mdk/crates/storage-sqlite" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 nostr-sdk = { version = "0.44", features = ["nip59"] }
 base64 = "0.22"
@@ -16,3 +16,5 @@ async-trait = "0.1"
 k256 = { version = "0.13", default-features = false, features = ["schnorr"] }
 sha2 = "0.10"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+wn-kv-test = { path = "../wn-kv-test" }
+keyvault = { path = "../keyvault-rs" }
