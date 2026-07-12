@@ -18,3 +18,6 @@ sha2 = "0.10"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 wn-kv-test = { path = "../wn-kv-test" }
 keyvault = { path = "../keyvault-rs" }
+openmls = { path = "../openmls/openmls", default-features = false }
+openmls_rust_crypto = { path = "../openmls/openmls_rust_crypto" }
+tls_codec = { version = "0.4", features = ["derive"] }
