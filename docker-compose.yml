@@ -1,0 +1,11 @@
+services:
+  strfry:
+    image: dockurr/strfry:latest
+    ports:
+      - "18777:7777"
+    volumes:
+      - ./dev/strfry.conf:/etc/strfry.conf
+      - strfry-data:/app/strfry-db
+
+volumes:
+  strfry-data:
