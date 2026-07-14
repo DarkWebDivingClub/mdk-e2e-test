@@ -20,7 +20,7 @@ use cgka_engine::{Engine, EngineBuilder};
 use cgka_traits::app_event::{MarmotAppEvent, MARMOT_APP_EVENT_KIND_CHAT};
 use cgka_traits::capabilities::{Capability, CapabilityRequirement, Feature, RequirementLevel};
 use cgka_traits::engine::{CgkaEngine, CreateGroupRequest, SendIntent, SendResult};
-use cgka_traits::mls_signer::MlsSigner;
+use cgka_traits::hpke_vault::HpkeVaultBackend;
 use cgka_traits::transport::{TransportEnvelope, TransportMessage};
 use cgka_traits::types::GroupId;
 use mdk_e2e_test::*;
@@ -84,11 +84,13 @@ fn build_engine_with_vault(
     let nostr_pubkey = wnas.nostr_pubkey().to_vec();
     let nostr_signer = wnas.nostr_signer();
     let mls_signer = wnas.mls_signer();
+    let vault_backend = Arc::new(wnas.mls_signer());
 
     EngineBuilder::new(SqliteAccountStorage::in_memory().unwrap())
         .identity(nostr_pubkey)
         .account_identity_proof_signer(Arc::new(VaultProofSigner(nostr_signer)))
         .mls_signer(Box::new(mls_signer))
+        .vault_backend(vault_backend, 0, 0)
         .feature_registry(selfremove_registry())
         .peeler(Box::new(RelayPeeler))
         .build()
@@ -499,14 +501,15 @@ async fn vault_key_package_uses_deterministic_hpke_init_key() {
     let mut alice = build_engine_with_vault(mnemonic, email, None);
 
     // 2. Independently derive what the vault HPKE pubkey at index 0 should be
+    //    The engine's VaultCryptoProvider uses init_counter starting at 0,
+    //    so the first KeyPackage's init key is pubkey_at("init", 0).
     let kml = KmLight::new(mnemonic, vec![email.to_string()]).unwrap();
     let pubkeys = kml.get_pubkeys();
     let wnas = kml.create_account_signer(&pubkeys[0], None).unwrap();
-    let mls_signer = wnas.mls_signer();
-    let expected_keypair = mls_signer
-        .next_hpke_init_keypair()
-        .expect("vault should produce HPKE keypair");
-    let expected_hpke_pubkey = expected_keypair.public.as_slice().to_vec();
+    let vault: Arc<dyn HpkeVaultBackend> = Arc::new(wnas.mls_signer());
+    let expected_hpke_pubkey = vault
+        .pubkey_at("init", 0)
+        .expect("vault should produce HPKE pubkey at init/0");
 
     // 3. Generate a KeyPackage from the engine
     let kp = alice.fresh_key_package().await.expect("fresh key package");
